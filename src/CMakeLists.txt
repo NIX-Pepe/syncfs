@@ -8,6 +8,11 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_BUILD_DIR ${PROJECT_SOURCE_DIR}/build)
 
+# pneuser begin
+SET(GCC_COVERAGE_COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
+add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
+# pneuser end
+
 #Add any source files that will create a single library
 set(syncfs_LIB
     syncfs.cpp

@@ -1,8 +1,8 @@
 #ifndef syncfs_p_H
 #define syncfs_p_H
 
-#include <iostream>
 #include <string>
+
 using namespace std;
 
 class SyncFSPrivate
