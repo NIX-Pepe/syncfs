@@ -11,6 +11,7 @@ set(CMAKE_BUILD_DIR ${PROJECT_SOURCE_DIR}/build)
 # pneuser begin
 SET(GCC_COVERAGE_COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
+add_subdirectory("headers_p")
 # pneuser end
 
 #Add any source files that will create a single library
@@ -55,3 +56,7 @@ install(TARGETS syncfs
         )
 
 add_subdirectory(headers)
+
+#pneuser begin
+target_include_directories(syncfs PUBLIC headers_p)
+#end pneuser

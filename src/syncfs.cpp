@@ -1,6 +1,11 @@
 #include "headers/syncfs.h"
 #include <iostream>
+#include <fstream>
 #include <string>
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+#include <syncfs_p.hpp>
 
 using namespace std;
 
@@ -16,11 +21,37 @@ SyncFS* SyncFS::Instance() {
     return _instance;
 }
 
-void SyncFS::setRootDir(const char *path) {
+SyncFS::SyncFS() :
+    d(new SyncFSPrivate())
+{
+
+}
+
+SyncFS::~SyncFS()
+{
+    delete d;
+}
+
+
+void SyncFS::setRootDir(string path, string path2) {
+    d->pathOrigin = path;
+    d->pathTarget = path2;
 }
 
 int SyncFS::Getattr(const char *path, struct stat *statbuf) {
-    return 0;
+    
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string *abspath = NULL;
+    d->AbsPath(abspath, path);
+    if(abspath == NULL)
+        return -ENOENT;
+    
+    /**
+     * read attribute of from origin file
+     */
+    return stat(abspath->c_str(), statbuf);
 }
 int SyncFS::Readlink(const char *path, char *link, size_t size) {
     return 0;
@@ -95,6 +126,37 @@ int SyncFS::Opendir(const char *path, struct fuse_file_info *fileInfo) {
     return 0;
 }
 int SyncFS::Readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string *abspath = NULL;
+    d->AbsPath(abspath, path);
+    if(abspath == NULL)
+        return -ENOENT;
+    
+    cout << abspath << "\n";
+    
+    /**
+     * read contents of directory in path  push list back to filler
+     */
+    DIR *dir = opendir(abspath->c_str());
+    if(dir == NULL)
+        return -ENOENT;
+    
+    // ok, dir is opened, let's read contents and pass them to filler
+    dirent *entr = NULL;
+    errno = 0;
+    while((entr = readdir(dir)) != NULL)
+    {
+        if(filler(buf,entr->d_name, NULL,0)!=0)
+            return -ENOMEM;
+    }
+    
+    if(errno != 0)
+        return -errno;
+    
+    closedir(dir);
+    
     return 0;
 }
 int SyncFS::Releasedir(const char *path, struct fuse_file_info *fileInfo) {

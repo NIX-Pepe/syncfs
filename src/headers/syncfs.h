@@ -1,32 +1,24 @@
 #ifndef syncfs_H
 #define syncfs_H
-
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <fuse.h>
 #include <limits.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/xattr.h>
-
-#include "syncfs_p.h"
+#include <string>
 
 using namespace std;
+
+class SyncFSPrivate;
 
 class SyncFS
 {
 private:
     static SyncFS *_instance;
-
-    void AbsPath(char dest[PATH_MAX], const char *path);
+    SyncFSPrivate *d;
+    SyncFS();
+    ~SyncFS();
 
 public:
     static SyncFS *Instance();
-    void setRootDir(const char *path);
+    void setRootDir(string path, string path2);
 
     int Getattr(const char *path, struct stat *statbuf);
     int Readlink(const char *path, char *link, size_t size);
@@ -58,9 +50,6 @@ public:
     int Fsyncdir(const char *path, int datasync, struct fuse_file_info *fileInfo);
     int Init(struct fuse_conn_info *conn);
     int Truncate(const char *path, off_t offset, struct fuse_file_info *fileInfo);
-protected:
-private:
-    SyncFSPrivate const *d;
 };
 
 
