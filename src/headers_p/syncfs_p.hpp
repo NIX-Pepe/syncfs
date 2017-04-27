@@ -16,12 +16,12 @@ public:
     string pathOrigin;
     string pathTarget;
     
-    void AbsPath(string *dest, const string path){
+    string AbsPath(const string path){
         if(path.length() + pathOrigin.length() < PATH_MAX)
         {
-            *dest = pathOrigin + path;
+            return pathOrigin + path;
         }else{
-            dest = NULL;
+            return "";
         }
     };
     void loadFileVersions() {};

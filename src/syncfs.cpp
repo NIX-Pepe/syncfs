@@ -34,6 +34,8 @@ SyncFS::~SyncFS()
 
 
 void SyncFS::setRootDir(string path, string path2) {
+    cout << "setRootDir: " << path << "\n";
+    cout << "setRootDir: " << path2 << "\n";
     d->pathOrigin = path;
     d->pathTarget = path2;
 }
@@ -43,15 +45,15 @@ int SyncFS::Getattr(const char *path, struct stat *statbuf) {
     /**
      * check if path length isn't exceeding maximum and complement prefix
      */
-    string *abspath = NULL;
-    d->AbsPath(abspath, path);
-    if(abspath == NULL)
+    string abspath = d->AbsPath(path);
+    cout << "Getattr: " << abspath << "\n";
+    if(abspath.length() == 0)
         return -ENOENT;
     
     /**
      * read attribute of from origin file
      */
-    return stat(abspath->c_str(), statbuf);
+    return stat(abspath.c_str(), statbuf);
 }
 int SyncFS::Readlink(const char *path, char *link, size_t size) {
     return 0;
@@ -90,12 +92,26 @@ int SyncFS::Utime(const char *path, struct utimbuf *ubuf) {
     return 0;
 }
 int SyncFS::Open(const char *path, struct fuse_file_info *fileInfo) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+    
+    fileInfo->fh = (abspath.c_str(), fileInfo->flags);
     return 0;
 }
 int SyncFS::Read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo) {
+    int err = pread(fileInfo->fh, buf, size, offset);
+    if(err > 0)
+        return -err;
     return 0;
 }
 int SyncFS::Write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fileInfo) {
+    int err = pwrite(fileInfo->fh, buf, size, offset);
+    if(err > 0)
+        return -err;
     return 0;
 }
 int SyncFS::Statfs(const char *path, struct statvfs *statInfo) {
@@ -123,27 +139,24 @@ int SyncFS::Removexattr(const char *path, const char *name) {
     return 0;
 }
 int SyncFS::Opendir(const char *path, struct fuse_file_info *fileInfo) {
-    return 0;
-}
-int SyncFS::Readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo) {
     /**
      * check if path length isn't exceeding maximum and complement prefix
      */
-    string *abspath = NULL;
-    d->AbsPath(abspath, path);
-    if(abspath == NULL)
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
         return -ENOENT;
     
-    cout << abspath << "\n";
+    errno = 0;
     
+    DIR *dir = opendir(abspath.c_str());
+	fileInfo->fh = (uint64_t)dir;
+	return NULL == dir ? -errno : 0;
+}
+int SyncFS::Readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo) {
     /**
      * read contents of directory in path  push list back to filler
      */
-    DIR *dir = opendir(abspath->c_str());
-    if(dir == NULL)
-        return -ENOENT;
-    
-    // ok, dir is opened, let's read contents and pass them to filler
+    DIR *dir = (DIR*)fileInfo->fh;
     dirent *entr = NULL;
     errno = 0;
     while((entr = readdir(dir)) != NULL)
@@ -155,11 +168,11 @@ int SyncFS::Readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t o
     if(errno != 0)
         return -errno;
     
-    closedir(dir);
-    
     return 0;
 }
 int SyncFS::Releasedir(const char *path, struct fuse_file_info *fileInfo) {
+    DIR *dir = (DIR*)fileInfo->fh;
+    closedir(dir);
     return 0;
 }
 int SyncFS::Fsyncdir(const char *path, int datasync, struct fuse_file_info *fileInfo) {
