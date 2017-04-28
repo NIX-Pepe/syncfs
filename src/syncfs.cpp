@@ -56,33 +56,115 @@ int SyncFS::Getattr(const char *path, struct stat *statbuf) {
     return stat(abspath.c_str(), statbuf);
 }
 int SyncFS::Readlink(const char *path, char *link, size_t size) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Mknod(const char *path, mode_t mode, dev_t dev) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    /** 
+     * if it's not a normal file which is to be created deny access
+     */
+    if(dev != S_IFREG)
+        return -EACCES;
+        
+    errno = 0;
+    int err = mkdir(abspath.c_str(), mode);
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Mkdir(const char *path, mode_t mode) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err = mkdir(abspath.c_str(), mode);
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Unlink(const char *path) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Rmdir(const char *path) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err =  rmdir(abspath.c_str());
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Symlink(const char *path, const char *link) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Rename(const char *path, const char *newpath) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    string newAbspath = d->AbsPath(path);
+    if(newAbspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err =  rename(abspath.c_str(), newAbspath.c_str());
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Link(const char *path, const char *newpath) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Chmod(const char *path, mode_t mode) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err =  chmod(abspath.c_str(),mode);
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Chown(const char *path, uid_t uid, gid_t gid) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err =  chown(abspath.c_str(), uid, gid);
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Truncate(const char *path, off_t newSize) {
@@ -115,6 +197,18 @@ int SyncFS::Write(const char *path, const char *buf, size_t size, off_t offset, 
     return 0;
 }
 int SyncFS::Statfs(const char *path, struct statvfs *statInfo) {
+    /**
+     * check if path length isn't exceeding maximum and complement prefix
+     */
+    string abspath = d->AbsPath(path);
+    if(abspath.length() == 0)
+        return -ENOENT;
+        
+    errno = 0;
+    int err =  statvfs(abspath.c_str(), statInfo);
+    if(err < 0)
+        return -errno;
+        
     return 0;
 }
 int SyncFS::Flush(const char *path, struct fuse_file_info *fileInfo) {
@@ -127,16 +221,16 @@ int SyncFS::Fsync(const char *path, int datasync, struct fuse_file_info *fi) {
     return 0;
 }
 int SyncFS::Setxattr(const char *path, const char *name, const char *value, size_t size, int flags) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Getxattr(const char *path, const char *name, char *value, size_t size) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Listxattr(const char *path, char *list, size_t size) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Removexattr(const char *path, const char *name) {
-    return 0;
+    return -EACCES;
 }
 int SyncFS::Opendir(const char *path, struct fuse_file_info *fileInfo) {
     /**
